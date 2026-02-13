@@ -17,13 +17,8 @@ const btnCancelAdd = $('#btn-cancel-add');
 const btnAddFolder = $('#btn-add-folder');
 const btnCancelFolder = $('#btn-cancel-folder');
 const btnManage = $('#btn-manage');
-const btnExport = $('#btn-export');
-const btnImport = $('#btn-import');
-const inputImportFile = $('#input-import-file');
 const queryList = $('#query-list');
 const emptyState = $('#empty-state');
-
-const EXPORT_VERSION = 1;
 
 function generateId() {
   return `q_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
@@ -463,95 +458,8 @@ formFolder.addEventListener('submit', async (e) => {
   refreshList();
 });
 
-async function doExport() {
-  const [queries, folders] = await Promise.all([getQueries(), getFolders()]);
-  const data = {
-    version: EXPORT_VERSION,
-    exportedAt: new Date().toISOString(),
-    folders,
-    queries,
-  };
-  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `scryfall-queries-${new Date().toISOString().slice(0, 10)}.json`;
-  a.click();
-  URL.revokeObjectURL(url);
-}
-
-function isValidExportShape(data) {
-  return (
-    data &&
-    typeof data === 'object' &&
-    Array.isArray(data.queries) &&
-    Array.isArray(data.folders)
-  );
-}
-
-function normalizeQuery(q) {
-  return {
-    id: q.id && typeof q.id === 'string' ? q.id : generateId(),
-    name: typeof q.name === 'string' ? q.name.trim() : 'Unnamed',
-    shortcut: typeof q.shortcut === 'string' ? q.shortcut.trim().toLowerCase().replace(/\s+/g, '') : '',
-    query: typeof q.query === 'string' ? q.query.trim() : '',
-    folderId: typeof q.folderId === 'string' ? q.folderId.trim() : '',
-  };
-}
-
-function normalizeFolder(f) {
-  return {
-    id: f.id && typeof f.id === 'string' ? f.id : generateFolderId(),
-    name: typeof f.name === 'string' ? f.name.trim() : 'Unnamed folder',
-  };
-}
-
-async function doImport(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = async (e) => {
-      try {
-        const data = JSON.parse(e.target.result);
-        if (!isValidExportShape(data)) {
-          reject(new Error('Invalid file format: expected "queries" and "folders" arrays.'));
-          return;
-        }
-        const folderIds = new Set((data.folders || []).map((f) => normalizeFolder(f).id));
-        const folders = (data.folders || []).map(normalizeFolder);
-        const queries = (data.queries || []).map((q) => {
-          const n = normalizeQuery(q);
-          if (n.folderId && !folderIds.has(n.folderId)) n.folderId = '';
-          return n;
-        });
-        await Promise.all([setFolders(folders), setQueries(queries)]);
-        refreshList();
-        resolve();
-      } catch (err) {
-        reject(err instanceof SyntaxError ? new Error('Invalid JSON in file.') : err);
-      }
-    };
-    reader.onerror = () => reject(new Error('Could not read file.'));
-    reader.readAsText(file, 'UTF-8');
-  });
-}
-
 btnManage.addEventListener('click', () => {
   window.open(chrome.runtime.getURL('manage.html'), '_blank');
-});
-
-btnExport.addEventListener('click', () => doExport());
-
-btnImport.addEventListener('click', () => {
-  inputImportFile.value = '';
-  inputImportFile.click();
-});
-
-inputImportFile.addEventListener('change', (e) => {
-  const file = e.target.files?.[0];
-  if (!file) return;
-  doImport(file).catch((err) => {
-    alert('Import failed: ' + (err?.message || String(err)));
-  });
 });
 
 refreshList();

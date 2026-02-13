@@ -1,7 +1,6 @@
 const SCRYFALL_SEARCH_URL = 'https://scryfall.com/search?q=';
 const STORAGE_KEY = 'scryfallSavedQueries';
 const FOLDERS_KEY = 'scryfallFolders';
-const EXPORT_VERSION = 1;
 
 const $ = (sel, ctx = document) => ctx.querySelector(sel);
 const $$ = (sel, ctx = document) => [...ctx.querySelectorAll(sel)];
@@ -246,73 +245,5 @@ $('#btn-new-query').addEventListener('click', () => {
   inputName.focus();
 });
 $('#btn-cancel-query').addEventListener('click', () => showForm(formQuery, false));
-
-async function doExport() {
-  const [queries, folders] = await Promise.all([getQueries(), getFolders()]);
-  const data = { version: EXPORT_VERSION, exportedAt: new Date().toISOString(), folders, queries };
-  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `scryfall-queries-${new Date().toISOString().slice(0, 10)}.json`;
-  a.click();
-  URL.revokeObjectURL(url);
-}
-
-function isValidExportShape(data) {
-  return data && typeof data === 'object' && Array.isArray(data.queries) && Array.isArray(data.folders);
-}
-function normalizeQuery(q) {
-  return {
-    id: q.id && typeof q.id === 'string' ? q.id : generateId(),
-    name: typeof q.name === 'string' ? q.name.trim() : 'Unnamed',
-    shortcut: typeof q.shortcut === 'string' ? q.shortcut.trim().toLowerCase().replace(/\s+/g, '') : '',
-    query: typeof q.query === 'string' ? q.query.trim() : '',
-    folderId: typeof q.folderId === 'string' ? q.folderId.trim() : '',
-  };
-}
-function normalizeFolder(f) {
-  return { id: f.id && typeof f.id === 'string' ? f.id : generateFolderId(), name: typeof f.name === 'string' ? f.name.trim() : 'Unnamed folder' };
-}
-
-async function doImport(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = async (e) => {
-      try {
-        const data = JSON.parse(e.target.result);
-        if (!isValidExportShape(data)) {
-          reject(new Error('Invalid file format.'));
-          return;
-        }
-        const folderIds = new Set((data.folders || []).map((f) => normalizeFolder(f).id));
-        const folders = (data.folders || []).map(normalizeFolder);
-        const queries = (data.queries || []).map((q) => {
-          const n = normalizeQuery(q);
-          if (n.folderId && !folderIds.has(n.folderId)) n.folderId = '';
-          return n;
-        });
-        await Promise.all([setFolders(folders), setQueries(queries)]);
-        render();
-        resolve();
-      } catch (err) {
-        reject(err instanceof SyntaxError ? new Error('Invalid JSON.') : err);
-      }
-    };
-    reader.onerror = () => reject(new Error('Could not read file.'));
-    reader.readAsText(file, 'UTF-8');
-  });
-}
-
-$('#btn-export').addEventListener('click', () => doExport());
-$('#btn-import').addEventListener('click', () => {
-  $('#input-import-file').value = '';
-  $('#input-import-file').click();
-});
-$('#input-import-file').addEventListener('change', (e) => {
-  const file = e.target.files?.[0];
-  if (!file) return;
-  doImport(file).catch((err) => alert('Import failed: ' + (err?.message || String(err))));
-});
 
 render();
