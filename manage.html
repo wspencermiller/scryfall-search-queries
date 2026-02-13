@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Manage queries – Scryfall Saved Queries</title>
+  <link rel="stylesheet" href="manage.css">
+</head>
+<body>
+  <div class="manage">
+    <header class="manage-header">
+      <h1 class="manage-title">Manage queries</h1>
+      <div class="manage-toolbar">
+        <button type="button" class="btn btn-ghost" id="btn-new-folder">+ Folder</button>
+        <button type="button" class="btn btn-primary" id="btn-new-query">+ Query</button>
+        <button type="button" class="btn btn-ghost" id="btn-export">Export</button>
+        <button type="button" class="btn btn-ghost" id="btn-import">Import</button>
+        <input type="file" id="input-import-file" accept=".json,application/json" class="hidden" aria-hidden="true">
+      </div>
+    </header>
+
+    <form id="form-folder" class="manage-form hidden">
+      <label class="manage-form-label">New folder</label>
+      <div class="manage-form-row">
+        <input type="text" id="input-folder-name" placeholder="Folder name" maxlength="60" autocomplete="off">
+        <button type="submit" class="btn btn-primary">Create</button>
+        <button type="button" class="btn btn-ghost" id="btn-cancel-folder">Cancel</button>
+      </div>
+    </form>
+
+    <form id="form-query" class="manage-form hidden">
+      <label class="manage-form-label">New query</label>
+      <div class="manage-form-grid">
+        <input type="text" id="input-name" placeholder="Name" maxlength="80" autocomplete="off">
+        <input type="text" id="input-shortcut" placeholder="Shortcut (e.g. commander)" maxlength="40" autocomplete="off">
+        <select id="input-folder" aria-label="Folder">
+          <option value="">No folder</option>
+        </select>
+        <textarea id="input-query" placeholder="Scryfall query" rows="2"></textarea>
+      </div>
+      <div class="manage-form-actions">
+        <button type="submit" class="btn btn-primary">Save</button>
+        <button type="button" class="btn btn-ghost" id="btn-cancel-query">Cancel</button>
+      </div>
+    </form>
+
+    <section class="manage-section" id="section-folders">
+      <h2 class="manage-section-title">Folders</h2>
+      <ul id="folder-list" class="folder-list"></ul>
+    </section>
+
+    <section class="manage-section">
+      <h2 class="manage-section-title">All queries</h2>
+      <div class="table-wrap">
+        <table class="query-table">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Shortcut</th>
+              <th>Folder</th>
+              <th>Query</th>
+              <th class="th-actions">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="query-tbody"></tbody>
+        </table>
+      </div>
+      <p id="empty-queries" class="empty-message hidden">No queries yet. Add one above.</p>
+    </section>
+  </div>
+  <script src="manage.js"></script>
+</body>
+</html>

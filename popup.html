@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Scryfall Saved Queries</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="popup">
+    <header class="header">
+      <h1 class="title">Saved Queries</h1>
+      <div class="header-actions">
+        <button type="button" class="btn btn-ghost" id="btn-add-folder" aria-label="New folder">+ Folder</button>
+        <button type="button" class="btn btn-primary" id="btn-add" aria-label="Add new query">+ Query</button>
+      </div>
+    </header>
+
+    <form id="form-folder" class="form-add form-folder hidden">
+      <input type="text" id="input-folder-name" placeholder="Folder name" required maxlength="60" autocomplete="off">
+      <div class="form-actions">
+        <button type="submit" class="btn btn-primary">Create</button>
+        <button type="button" class="btn btn-ghost" id="btn-cancel-folder">Cancel</button>
+      </div>
+    </form>
+
+    <form id="form-add" class="form-add hidden">
+      <input type="text" id="input-name" placeholder="Query name" required maxlength="80" autocomplete="off">
+      <select id="input-folder" aria-label="Folder">
+        <option value="">No folder</option>
+      </select>
+      <input type="text" id="input-shortcut" placeholder="Shortcut (e.g. commander → type ?commander in search)" maxlength="40" autocomplete="off">
+      <textarea id="input-query" placeholder="Scryfall query (e.g. is:commander f:edh game:paper)" rows="2" required></textarea>
+      <div class="form-actions">
+        <button type="submit" class="btn btn-primary">Save</button>
+        <button type="button" class="btn btn-ghost" id="btn-cancel-add">Cancel</button>
+      </div>
+    </form>
+
+    <div id="query-list-container" class="query-list-container">
+      <ul id="query-list" class="query-list" aria-label="Saved Scryfall queries"></ul>
+    </div>
+
+    <p id="empty-state" class="empty-state hidden">No saved queries yet. Add one above.</p>
+
+    <footer class="footer">
+      <button type="button" class="btn btn-ghost btn-sm" id="btn-manage" aria-label="Open manage page">Manage</button>
+      <button type="button" class="btn btn-ghost btn-sm" id="btn-export" aria-label="Export queries">Export</button>
+      <button type="button" class="btn btn-ghost btn-sm" id="btn-import" aria-label="Import queries">Import</button>
+      <input type="file" id="input-import-file" accept=".json,application/json" class="hidden" aria-hidden="true">
+    </footer>
+  </div>
+  <script src="popup.js"></script>
+</body>
+</html>
