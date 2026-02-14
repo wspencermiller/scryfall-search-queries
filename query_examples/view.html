@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Commander queries</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { font: 14px/1.5 system-ui, sans-serif; max-width: 720px; margin: 0 auto; padding: 16px; color: #24292f; background: #f6f8fa; }
+    h1 { font-size: 1.25rem; margin: 0 0 12px 0; }
+    .meta { font-size: 12px; color: #57606a; margin-bottom: 16px; }
+    section { margin-bottom: 20px; padding-left: calc(var(--folder-depth, 0) * 20px); }
+    .folder-name { font-weight: 600; color: #0969da; margin-bottom: 6px; }
+    .query { display: block; padding: 6px 10px; background: #fff; border: 1px solid #d0d7de; border-radius: 6px; margin-bottom: 4px; color: inherit; text-decoration: none; }
+    .query:hover { border-color: #0969da; background: #f0f6ff; }
+    .query-name { font-weight: 500; }
+    .query-shortcut { font-size: 12px; color: #57606a; margin-left: 8px; }
+    .query-text { display: block; font-size: 12px; color: #656d76; margin-top: 2px; font-family: ui-monospace, monospace; }
+    .no-folder .folder-name { color: #656d76; }
+  </style>
+</head>
+<body>
+  <h1>Commander queries</h1>
+  <p class="meta" id="meta"></p>
+  <div id="root"></div>
+  <script>
+    (function () {
+      const data = {"version":1,"exportedAt":"2025-02-13T00:00:00.000Z","folders":[{"id":"f_commander_ci","name":"Commanders by CI"}],"queries":[{"id":"q_1","name":"Commanders","shortcut":"?c","query":"is:commander f:edh game:paper","folderId":""},{"id":"q_2","name":"Colorless","shortcut":"?cc","query":"?c ci=colorless","folderId":"f_commander_ci"},{"id":"q_3","name":"White","shortcut":"?w","query":"?c ci=w","folderId":"f_commander_ci"},{"id":"q_4","name":"Blue","shortcut":"?u","query":"?c ci=u","folderId":"f_commander_ci"},{"id":"q_5","name":"Black","shortcut":"?b","query":"?c ci=b","folderId":"f_commander_ci"},{"id":"q_6","name":"Red","shortcut":"?r","query":"?c ci=r","folderId":"f_commander_ci"},{"id":"q_7","name":"Green","shortcut":"?g","query":"?c ci=g","folderId":"f_commander_ci"},{"id":"q_8","name":"Azorius WU","shortcut":"?wu","query":"?c ci=WU","folderId":"f_commander_ci"},{"id":"q_9","name":"Dimir UB","shortcut":"?ub","query":"?c ci=UB","folderId":"f_commander_ci"},{"id":"q_10","name":"Rakdos BR","shortcut":"?br","query":"?c ci=BR","folderId":"f_commander_ci"},{"id":"q_11","name":"Gruul RG","shortcut":"?rg","query":"?c ci=RG","folderId":"f_commander_ci"},{"id":"q_12","name":"Selesnya WG","shortcut":"?wg","query":"?c ci=WG","folderId":"f_commander_ci"},{"id":"q_13","name":"Orzhov WB","shortcut":"?wb","query":"?c ci=WB","folderId":"f_commander_ci"},{"id":"q_14","name":"Izzet UR","shortcut":"?ur","query":"?c ci=UR","folderId":"f_commander_ci"},{"id":"q_15","name":"Golgari BG","shortcut":"?bg","query":"?c ci=BG","folderId":"f_commander_ci"},{"id":"q_16","name":"Boros WR","shortcut":"?wr","query":"?c ci=WR","folderId":"f_commander_ci"},{"id":"q_17","name":"Simic UG","shortcut":"?ug","query":"?c ci=UG","folderId":"f_commander_ci"},{"id":"q_18","name":"Esper WUB","shortcut":"?wub","query":"?c ci=WUB","folderId":"f_commander_ci"},{"id":"q_19","name":"Grixis RUB","shortcut":"?rub","query":"?c ci=RUB","folderId":"f_commander_ci"},{"id":"q_20","name":"Jund RGB","shortcut":"?rgb","query":"?c ci=RGB","folderId":"f_commander_ci"},{"id":"q_21","name":"Naya WGU","shortcut":"?wgu","query":"?c ci=WGU","folderId":"f_commander_ci"},{"id":"q_22","name":"Bant WUG","shortcut":"?wug","query":"?c ci=WUG","folderId":"f_commander_ci"},{"id":"q_23","name":"Azban WBG","shortcut":"?wbg","query":"?c ci=WBG","folderId":"f_commander_ci"},{"id":"q_24","name":"Jeskai RWU","shortcut":"?rwu","query":"?c ci=RWU","folderId":"f_commander_ci"},{"id":"q_25","name":"Sultai UBG","shortcut":"?ubg","query":"?c ci=UBG","folderId":"f_commander_ci"},{"id":"q_26","name":"Mardu RWB","shortcut":"?rwb","query":"?c ci=RWB","folderId":"f_commander_ci"},{"id":"q_27","name":"Temur GUR","shortcut":"?gur","query":"?c ci=GUR","folderId":"f_commander_ci"},{"id":"q_28","name":"WBRU","shortcut":"?wrbu","query":"?c ci=WBRU","folderId":"f_commander_ci"},{"id":"q_29","name":"WRGB","shortcut":"?wrgb","query":"?c ci=WRGB","folderId":"f_commander_ci"},{"id":"q_30","name":"RGBU","shortcut":"?rgbu","query":"?c ci=RGBU","folderId":"f_commander_ci"},{"id":"q_31","name":"WRUG","shortcut":"?wrug","query":"?c ci=WRUG","folderId":"f_commander_ci"},{"id":"q_32","name":"WUGB","shortcut":"?wugb","query":"?c ci=WUGB","folderId":"f_commander_ci"},{"id":"q_33","name":"5 Color","shortcut":"?5c","query":"?c ci=wubrg","folderId":"f_commander_ci"}]};
+
+      const root = document.getElementById('root');
+      const meta = document.getElementById('meta');
+      meta.textContent = data.exportedAt ? 'Exported ' + new Date(data.exportedAt).toLocaleString() : '';
+
+      const byFolder = new Map();
+      byFolder.set('', []);
+      (data.folders || []).forEach(function (f) { byFolder.set(f.id, []); });
+      (data.queries || []).forEach(function (q) {
+        const fid = (q.folderId || '').trim();
+        if (!byFolder.has(fid)) byFolder.set(fid, []);
+        byFolder.get(fid).push(q);
+      });
+
+      function buildShortcutMap(queries) {
+        const map = new Map();
+        queries.forEach(function (q) {
+          var s = (q.shortcut || '').trim().toLowerCase().replace(/^\?/, '');
+          if (s) map.set(s, (q.query || '').trim());
+        });
+        return map;
+      }
+      function expandNested(text, shortcutMap) {
+        if (!shortcutMap.size) return text;
+        var shortcutsByLength = Array.from(shortcutMap.keys()).sort(function (a, b) { return b.length - a.length; });
+        var maxIter = 10;
+        var result = text;
+        for (var iter = 0; iter < maxIter; iter++) {
+          var replaced = false;
+          for (var i = 0; i < result.length; i++) {
+            if (result[i] !== '?') continue;
+            var after = result.slice(i + 1);
+            for (var j = 0; j < shortcutsByLength.length; j++) {
+              var short = shortcutsByLength[j];
+              var sub = after.slice(0, short.length);
+              if (sub.toLowerCase() !== short) continue;
+              var next = after[short.length];
+              if (next !== undefined && next !== ' ') continue;
+              var expansion = shortcutMap.get(short);
+              if (!expansion) continue;
+              result = result.slice(0, i) + expansion + after.slice(short.length);
+              replaced = true;
+              break;
+            }
+            if (replaced) break;
+          }
+          if (!replaced) break;
+        }
+        return result;
+      }
+
+      var shortcutMap = buildShortcutMap(data.queries || []);
+
+      const SCRYFALL_SEARCH = 'https://scryfall.com/search?q=';
+      function renderQuery(q) {
+        const rawQuery = (q.query || '').trim();
+        const expandedQuery = expandNested(rawQuery, shortcutMap);
+        const url = SCRYFALL_SEARCH + encodeURIComponent(expandedQuery);
+        const a = document.createElement('a');
+        a.className = 'query';
+        a.href = url;
+        a.target = '_blank';
+        a.rel = 'noopener';
+        a.title = 'Open on Scryfall: ' + expandedQuery;
+        a.innerHTML = '<span class="query-name">' + escapeHtml(q.name) + '</span>' +
+          (q.shortcut ? '<span class="query-shortcut">' + escapeHtml(q.shortcut) + '</span>' : '') +
+          '<span class="query-text">' + escapeHtml(expandedQuery) + '</span>';
+        return a;
+      }
+      function escapeHtml(s) {
+        const el = document.createElement('span');
+        el.textContent = s;
+        return el.innerHTML;
+      }
+
+      function foldersWithDepth(folders) {
+        var result = [];
+        function add(folder, depth) {
+          result.push({ folder: folder, depth: depth });
+          folders.forEach(function (f) {
+            if ((f.parentId || '').trim() === folder.id) add(f, depth + 1);
+          });
+        }
+        folders.forEach(function (f) {
+          if (!(f.parentId || '').trim()) add(f, 0);
+        });
+        var parentIds = new Set(folders.map(function (f) { return f.id; }));
+        folders.forEach(function (f) {
+          var pid = (f.parentId || '').trim();
+          if (pid && !parentIds.has(pid)) add(f, 0);
+        });
+        return result;
+      }
+
+      const uncategorized = byFolder.get('') || [];
+      if (uncategorized.length > 0) {
+        const sec = document.createElement('section');
+        sec.className = 'no-folder';
+        sec.style.setProperty('--folder-depth', '0');
+        sec.innerHTML = '<div class="folder-name">No folder</div>';
+        uncategorized.forEach(function (q) { sec.appendChild(renderQuery(q)); });
+        root.appendChild(sec);
+      }
+      foldersWithDepth(data.folders || []).forEach(function (item) {
+        var folder = item.folder;
+        var depth = item.depth;
+        const list = byFolder.get(folder.id) || [];
+        if (list.length === 0) return;
+        const sec = document.createElement('section');
+        sec.style.setProperty('--folder-depth', String(depth));
+        sec.innerHTML = '<div class="folder-name">' + escapeHtml(folder.name) + '</div>';
+        list.forEach(function (q) { sec.appendChild(renderQuery(q)); });
+        root.appendChild(sec);
+      });
+    })();
+  </script>
+</body>
+</html>
