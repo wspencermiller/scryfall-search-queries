@@ -51,3 +51,8 @@ Load the extension **unpacked** (see Install above) so you can use DevTools.
 
 - **In-extension log:**
   - Click **Log** in the popup footer or on the Manage page to open a log viewer in a new tab. The extension records recent actions (e.g. popup opened, export started/done, content script loaded) in a rotating buffer (last 150 entries). Use **Refresh** to update the view and **Clear log** to reset.
+
+## Documentation
+
+- **docs/** – **index.html** is a lightweight viewer for the example commander queries: open `docs/index.html` in a browser to browse and open searches on Scryfall.
+- **docs/query_examples/** – Example commander queries (CSV and importable JSON) for the extension.
