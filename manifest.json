@@ -25,7 +25,7 @@
   "content_scripts": [
     {
       "matches": ["*://scryfall.com/*"],
-      "js": ["content.js"],
+      "js": ["log.js","content.js"],
       "run_at": "document_idle"
     }
   ],

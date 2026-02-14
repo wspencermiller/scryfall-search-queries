@@ -1,6 +1,9 @@
 const SCRYFALL_SEARCH_URL = 'https://scryfall.com/search?q=';
 const STORAGE_KEY = 'scryfallSavedQueries';
 const FOLDERS_KEY = 'scryfallFolders';
+const EXPORT_VERSION = 1;
+
+const syncStorage = typeof chrome !== 'undefined' && chrome.storage && chrome.storage.sync ? chrome.storage.sync : null;
 
 const $ = (sel, ctx = document) => ctx.querySelector(sel);
 const $$ = (sel, ctx = document) => [...ctx.querySelectorAll(sel)];
@@ -14,37 +17,80 @@ function generateFolderId() {
 
 function getQueries() {
   return new Promise((resolve) => {
-    chrome.storage.sync.get([STORAGE_KEY], (data) => {
+    if (!syncStorage) {
+      resolve([]);
+      return;
+    }
+    syncStorage.get([STORAGE_KEY], (data) => {
       resolve(Array.isArray(data[STORAGE_KEY]) ? data[STORAGE_KEY] : []);
     });
   });
 }
 function setQueries(queries) {
   return new Promise((resolve) => {
-    chrome.storage.sync.set({ [STORAGE_KEY]: queries }, resolve);
+    if (!syncStorage) {
+      resolve();
+      return;
+    }
+    syncStorage.set({ [STORAGE_KEY]: queries }, resolve);
   });
 }
 function getFolders() {
   return new Promise((resolve) => {
-    chrome.storage.sync.get([FOLDERS_KEY], (data) => {
+    if (!syncStorage) {
+      resolve([]);
+      return;
+    }
+    syncStorage.get([FOLDERS_KEY], (data) => {
       resolve(Array.isArray(data[FOLDERS_KEY]) ? data[FOLDERS_KEY] : []);
     });
   });
 }
 function setFolders(folders) {
   return new Promise((resolve) => {
-    chrome.storage.sync.set({ [FOLDERS_KEY]: folders }, resolve);
+    if (!syncStorage) {
+      resolve();
+      return;
+    }
+    syncStorage.set({ [FOLDERS_KEY]: folders }, resolve);
   });
+}
+
+/** Build list of folders in tree order with depth (0 = root). At each level, leaf folders (no children) come before parent folders. */
+function foldersWithDepth(folders) {
+  const hasChildren = (folderId) => folders.some((f) => (f.parentId || '').trim() === folderId);
+  const result = [];
+  function add(folder, depth) {
+    result.push({ folder, depth });
+    const children = folders.filter((f) => (f.parentId || '').trim() === folder.id);
+    children.sort((a, b) => Number(hasChildren(a.id)) - Number(hasChildren(b.id)));
+    children.forEach((c) => add(c, depth + 1));
+  }
+  const roots = folders.filter((f) => !(f.parentId || '').trim());
+  roots.sort((a, b) => Number(hasChildren(a.id)) - Number(hasChildren(b.id)));
+  roots.forEach((f) => add(f, 0));
+  const withParent = folders.filter((f) => (f.parentId || '').trim());
+  const parentIds = new Set(folders.map((f) => f.id));
+  const orphans = withParent.filter((f) => !parentIds.has((f.parentId || '').trim()));
+  orphans.sort((a, b) => Number(hasChildren(a.id)) - Number(hasChildren(b.id)));
+  orphans.forEach((f) => add(f, 0));
+  return result;
 }
 
 function folderNameById(folders, id) {
   if (!id) return '—';
-  const f = folders.find((x) => x.id === id);
-  return f ? f.name : '—';
+  const path = [];
+  let f = folders.find((x) => x.id === id);
+  while (f) {
+    path.unshift(f.name);
+    f = f.parentId ? folders.find((x) => x.id === f.parentId) : null;
+  }
+  return path.length ? path.join(' » ') : '—';
 }
 
 const formFolder = $('#form-folder');
 const formQuery = $('#form-query');
+const formImport = $('#form-import');
 const inputFolderName = $('#input-folder-name');
 const inputName = $('#input-name');
 const inputShortcut = $('#input-shortcut');
@@ -61,19 +107,34 @@ function showForm(el, show) {
 async function populateFolderSelect(selectedId) {
   const folders = await getFolders();
   inputFolder.innerHTML = '<option value="">No folder</option>';
-  folders.forEach((f) => {
+  foldersWithDepth(folders).forEach(({ folder, depth }) => {
     const opt = document.createElement('option');
-    opt.value = f.id;
-    opt.textContent = f.name;
-    if (f.id === selectedId) opt.selected = true;
+    opt.value = folder.id;
+    opt.textContent = (depth > 0 ? '\u2003'.repeat(depth) + '\u2514 ' : '') + folder.name;
+    if (folder.id === selectedId) opt.selected = true;
     inputFolder.appendChild(opt);
   });
 }
 
-function renderFolderItem(folder, folders, queries) {
+async function populateFolderParentSelect() {
+  const sel = $('#input-folder-parent');
+  if (!sel) return;
+  sel.innerHTML = '<option value="">No folder (top level)</option>';
+  const folders = await getFolders();
+  foldersWithDepth(folders).forEach(({ folder, depth }) => {
+    const opt = document.createElement('option');
+    opt.value = folder.id;
+    opt.textContent = (depth > 0 ? '\u2003'.repeat(depth) + '\u2514 ' : '') + folder.name;
+    sel.appendChild(opt);
+  });
+}
+
+function renderFolderItem(folder, folders, queries, depth) {
+  depth = depth || 0;
   const li = document.createElement('li');
-  li.className = 'folder-item';
+  li.className = 'folder-item' + (depth > 0 ? ' folder-item--nested' : '');
   li.dataset.folderId = folder.id;
+  li.style.setProperty('--folder-depth', String(depth));
   const count = queries.filter((q) => (q.folderId || '') === folder.id).length;
   li.innerHTML = `
     <span class="folder-item-name">${escapeHtml(folder.name)}</span>
@@ -104,10 +165,14 @@ async function startRenameFolder(folder) {
 }
 
 async function deleteFolder(id) {
-  if (!confirm('Delete this folder? Queries in it will move to "No folder".')) return;
+  if (!confirm('Delete this folder? Its subfolders will move up; queries in it will move to the parent folder (or "No folder").')) return;
   const [folders, queries] = await Promise.all([getFolders(), getQueries()]);
-  const nextFolders = folders.filter((f) => f.id !== id);
-  const nextQueries = queries.map((q) => (q.folderId === id ? { ...q, folderId: '' } : q));
+  const folder = folders.find((f) => f.id === id);
+  const parentId = folder ? (folder.parentId || '').trim() : '';
+  const nextFolders = folders.filter((f) => f.id !== id).map((f) =>
+    (f.parentId || '').trim() === id ? { ...f, parentId } : f
+  );
+  const nextQueries = queries.map((q) => (q.folderId === id ? { ...q, folderId: parentId } : q));
   await Promise.all([setFolders(nextFolders), setQueries(nextQueries)]);
   render();
 }
@@ -122,11 +187,11 @@ function renderQueryRow(query, folders, editing) {
     const select = document.createElement('select');
     select.className = 'edit-select';
     select.innerHTML = '<option value="">No folder</option>';
-    folders.forEach((f) => {
+    foldersWithDepth(folders).forEach(({ folder, depth }) => {
       const opt = document.createElement('option');
-      opt.value = f.id;
-      opt.textContent = f.name;
-      if ((query.folderId || '') === f.id) opt.selected = true;
+      opt.value = folder.id;
+      opt.textContent = (depth > 0 ? '\u2003'.repeat(depth) + '\u2514 ' : '') + folder.name;
+      if ((query.folderId || '') === folder.id) opt.selected = true;
       select.appendChild(opt);
     });
     tr.innerHTML = `
@@ -192,7 +257,7 @@ async function render() {
   if (folders.length === 0) {
     folderList.innerHTML = '<li class="folder-item folder-item--empty">No folders</li>';
   } else {
-    folders.forEach((f) => folderList.appendChild(renderFolderItem(f, folders, queries)));
+    foldersWithDepth(folders).forEach(({ folder, depth }) => folderList.appendChild(renderFolderItem(folder, folders, queries, depth)));
   }
 
   queryTbody.innerHTML = '';
@@ -205,7 +270,8 @@ formFolder.addEventListener('submit', async (e) => {
   const name = inputFolderName.value.trim();
   if (!name) return;
   const folders = await getFolders();
-  folders.push({ id: generateFolderId(), name });
+  const parentId = ($('#input-folder-parent').value || '').trim();
+  folders.push({ id: generateFolderId(), name, parentId: parentId || '' });
   await setFolders(folders);
   formFolder.reset();
   showForm(formFolder, false);
@@ -215,6 +281,7 @@ formFolder.addEventListener('submit', async (e) => {
 $('#btn-new-folder').addEventListener('click', () => {
   showForm(formQuery, false);
   showForm(formFolder, true);
+  populateFolderParentSelect();
   inputFolderName.value = '';
   inputFolderName.focus();
 });
@@ -246,4 +313,104 @@ $('#btn-new-query').addEventListener('click', () => {
 });
 $('#btn-cancel-query').addEventListener('click', () => showForm(formQuery, false));
 
+async function doExport() {
+  scryfallLog.log('Export started (manage)', 'info');
+  try {
+    const [queries, folders] = await Promise.all([getQueries(), getFolders()]);
+    const data = { version: EXPORT_VERSION, exportedAt: new Date().toISOString(), folders, queries };
+    const json = JSON.stringify(data, null, 2);
+    await new Promise(function (resolve) {
+      chrome.storage.local.set({ scryfallExportPreview: json }, resolve);
+    });
+    window.open(chrome.runtime.getURL('export.html'), '_blank');
+    scryfallLog.log('Export done (manage)', 'info');
+  } catch (err) {
+    scryfallLog.logError('Export failed (manage)', err);
+  }
+}
+
+function isValidExportShape(data) {
+  return data && typeof data === 'object' && Array.isArray(data.queries) && Array.isArray(data.folders);
+}
+
+function normalizeQuery(q) {
+  return {
+    id: q.id && typeof q.id === 'string' ? q.id : generateId(),
+    name: typeof q.name === 'string' ? q.name.trim() : 'Unnamed',
+    shortcut: typeof q.shortcut === 'string' ? q.shortcut.trim().toLowerCase().replace(/\s+/g, '') : '',
+    query: typeof q.query === 'string' ? q.query.trim() : '',
+    folderId: typeof q.folderId === 'string' ? q.folderId.trim() : '',
+  };
+}
+
+function normalizeFolder(f) {
+  return { id: f.id && typeof f.id === 'string' ? f.id : generateFolderId(), name: typeof f.name === 'string' ? f.name.trim() : 'Unnamed folder', parentId: typeof f.parentId === 'string' ? f.parentId.trim() : '' };
+}
+
+async function doImportFromJson(jsonText) {
+  const data = JSON.parse(jsonText);
+  if (!isValidExportShape(data)) {
+    throw new Error('Invalid format: expected "queries" and "folders" arrays.');
+  }
+  const folderIds = new Set((data.folders || []).map((f) => normalizeFolder(f).id));
+  const folders = (data.folders || []).map(normalizeFolder);
+  const queries = (data.queries || []).map((q) => {
+    const n = normalizeQuery(q);
+    if (n.folderId && !folderIds.has(n.folderId)) n.folderId = '';
+    return n;
+  });
+  await Promise.all([setFolders(folders), setQueries(queries)]);
+  render();
+}
+
+$('#btn-export').addEventListener('click', () => doExport());
+$('#btn-import').addEventListener('click', () => {
+  showForm(formFolder, false);
+  showForm(formQuery, false);
+  showForm(formImport, true);
+  $('#input-import-paste').value = '';
+  $('#input-import-paste').focus();
+});
+$('#btn-cancel-import').addEventListener('click', () => showForm(formImport, false));
+formImport.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const raw = $('#input-import-paste').value.trim();
+  if (!raw) return;
+  try {
+    await doImportFromJson(raw);
+    showForm(formImport, false);
+    scryfallLog.log('Import done (manage)', 'info');
+  } catch (err) {
+    alert('Import failed: ' + (err?.message || String(err)));
+    scryfallLog.logError('Import failed (manage)', err);
+  }
+});
+$('#btn-log').addEventListener('click', () => {
+  window.open(chrome.runtime.getURL('log.html'), '_blank');
+});
+
+function setupCollapsibleSections() {
+  function toggleSection(sectionId, titleId) {
+    const section = document.getElementById(sectionId);
+    const title = document.getElementById(titleId);
+    if (!section || !title) return;
+    const collapsed = section.classList.toggle('manage-section--collapsed');
+    title.setAttribute('aria-expanded', !collapsed);
+  }
+  ['section-folders', 'section-queries'].forEach((id) => {
+    const titleId = id + '-title';
+    const title = document.getElementById(titleId);
+    if (!title) return;
+    title.addEventListener('click', () => toggleSection(id, titleId));
+    title.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        toggleSection(id, titleId);
+      }
+    });
+  });
+}
+setupCollapsibleSections();
+
+scryfallLog.log('Manage page opened', 'info');
 render();

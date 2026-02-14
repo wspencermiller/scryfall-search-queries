@@ -1,11 +1,19 @@
 (function () {
+  if (typeof scryfallLog !== 'undefined') scryfallLog.log('Content script loaded', 'info');
+
   const STORAGE_KEY = 'scryfallSavedQueries';
   const FOLDERS_KEY = 'scryfallFolders';
   const SCRYFALL_SEARCH_URL = 'https://scryfall.com/search?q=';
 
+  const syncStorage = typeof chrome !== 'undefined' && chrome.storage && chrome.storage.sync ? chrome.storage.sync : null;
+
   function getQueries() {
     return new Promise((resolve) => {
-      chrome.storage.sync.get([STORAGE_KEY], (data) => {
+      if (!syncStorage) {
+        resolve([]);
+        return;
+      }
+      syncStorage.get([STORAGE_KEY], (data) => {
         const list = data[STORAGE_KEY];
         resolve(Array.isArray(list) ? list : []);
       });
@@ -14,7 +22,11 @@
 
   function getFolders() {
     return new Promise((resolve) => {
-      chrome.storage.sync.get([FOLDERS_KEY], (data) => {
+      if (!syncStorage) {
+        resolve([]);
+        return;
+      }
+      syncStorage.get([FOLDERS_KEY], (data) => {
         const list = data[FOLDERS_KEY];
         resolve(Array.isArray(list) ? list : []);
       });
@@ -157,11 +169,19 @@
       .scryfall-ext-panel { position: absolute; left: 0; top: 100%; margin-top: 4px; min-width: 220px; max-height: 320px; overflow-y: auto; background: #161b22; border: 1px solid #30363d; border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,0.4); z-index: 9999; padding: 6px 0; }
       .scryfall-ext-row { display: flex; align-items: center; gap: 8px; padding: 4px 12px; }
       .scryfall-ext-row:hover { background: #21262d; }
+      .scryfall-ext-row-icon { flex-shrink: 0; width: 16px; text-align: center; color: #8b949e; font-size: 12px; }
+      .scryfall-ext-row-icon::before { content: "\\1F50D"; }
       .scryfall-ext-row a { flex: 1; min-width: 0; padding: 4px 0; color: #e6edf3; text-decoration: none; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
       .scryfall-ext-row a:hover { color: #58a6ff; }
       .scryfall-ext-paste { flex-shrink: 0; padding: 4px 8px; font-size: 11px; font-weight: 500; color: #58a6ff; background: transparent; border: 1px solid #30363d; border-radius: 6px; cursor: pointer; }
       .scryfall-ext-paste:hover { background: #21262d; border-color: #58a6ff; color: #79b8ff; }
-      .scryfall-ext-group { padding: 4px 12px 2px; font-size: 11px; color: #8b949e; font-weight: 600; }
+      .scryfall-ext-group { margin: 0; }
+      .scryfall-ext-group-header { display: flex; align-items: center; gap: 4px; padding: 4px 12px 2px; font-size: 11px; color: #8b949e; font-weight: 600; cursor: pointer; user-select: none; }
+      .scryfall-ext-group-header:hover { color: #e6edf3; }
+      .scryfall-ext-group-header::before { content: "\\25B6"; font-size: 10px; }
+      .scryfall-ext-group:not(.scryfall-ext-group--collapsed) .scryfall-ext-group-header::before { content: "\\25BC"; }
+      .scryfall-ext-group-body { }
+      .scryfall-ext-group--collapsed .scryfall-ext-group-body { display: none; }
       .scryfall-ext-empty { padding: 12px; color: #8b949e; font-size: 13px; }
     `;
     document.head.appendChild(style);
@@ -187,6 +207,10 @@
       const expandedQuery = expandNested(rawQuery, shortcutMap);
       const row = document.createElement('div');
       row.className = 'scryfall-ext-row';
+      const icon = document.createElement('span');
+      icon.className = 'scryfall-ext-row-icon';
+      icon.setAttribute('aria-hidden', 'true');
+      icon.title = 'Query';
       const a = document.createElement('a');
       a.href = SCRYFALL_SEARCH_URL + encodeURIComponent(expandedQuery);
       a.textContent = q.name || 'Unnamed';
@@ -206,23 +230,38 @@
         }
         if (onClose) onClose();
       });
+      row.appendChild(icon);
       row.appendChild(a);
       row.appendChild(pasteBtn);
       return row;
     }
 
-    const uncategorized = byFolder.get('') || [];
-    if (uncategorized.length > 0) {
-      uncategorized.forEach((q) => panel.appendChild(makeRow(q)));
+    function addCollapsibleGroup(title, list, startCollapsed) {
+      const section = document.createElement('div');
+      section.className = 'scryfall-ext-group' + (startCollapsed !== false ? ' scryfall-ext-group--collapsed' : '');
+      const header = document.createElement('div');
+      header.className = 'scryfall-ext-group-header';
+      header.setAttribute('role', 'button');
+      header.setAttribute('aria-expanded', startCollapsed === false);
+      header.textContent = title;
+      header.addEventListener('click', function () {
+        section.classList.toggle('scryfall-ext-group--collapsed');
+        header.setAttribute('aria-expanded', !section.classList.contains('scryfall-ext-group--collapsed'));
+      });
+      const body = document.createElement('div');
+      body.className = 'scryfall-ext-group-body';
+      list.forEach((q) => body.appendChild(makeRow(q)));
+      section.appendChild(header);
+      section.appendChild(body);
+      panel.appendChild(section);
     }
+
+    const uncategorized = byFolder.get('') || [];
+    uncategorized.forEach((q) => panel.appendChild(makeRow(q)));
     folders.forEach((folder) => {
       const list = byFolder.get(folder.id) || [];
       if (list.length === 0) return;
-      const groupLabel = document.createElement('div');
-      groupLabel.className = 'scryfall-ext-group';
-      groupLabel.textContent = folder.name;
-      panel.appendChild(groupLabel);
-      list.forEach((q) => panel.appendChild(makeRow(q)));
+      addCollapsibleGroup(folder.name, list, true);
     });
   }
 

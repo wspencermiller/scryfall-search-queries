@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Extension log – Scryfall Saved Queries</title>
+  <link rel="stylesheet" href="manage.css">
+  <style>
+    .log-page { max-width: 900px; margin: 0 auto; padding: 20px 24px; }
+    .log-header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--border); }
+    .log-title { margin: 0; font-size: 18px; font-weight: 600; }
+    .log-toolbar { display: flex; gap: 8px; }
+    .log-list { font-family: ui-monospace, monospace; font-size: 12px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px; max-height: 70vh; overflow-y: auto; }
+    .log-entry { padding: 4px 0; border-bottom: 1px solid var(--border); display: flex; gap: 12px; align-items: flex-start; }
+    .log-entry:last-child { border-bottom: none; }
+    .log-time { color: var(--text-muted); flex-shrink: 0; }
+    .log-level { flex-shrink: 0; font-weight: 600; }
+    .log-level.info { color: var(--accent); }
+    .log-level.warn { color: #d29922; }
+    .log-level.error { color: var(--danger); }
+    .log-msg { word-break: break-word; }
+    .log-ctx { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+    .log-empty { color: var(--text-muted); }
+  </style>
+</head>
+<body>
+  <div class="log-page">
+    <header class="log-header">
+      <h1 class="log-title">Extension log</h1>
+      <div class="log-toolbar">
+        <button type="button" class="btn btn-ghost" id="btn-refresh">Refresh</button>
+        <button type="button" class="btn btn-ghost" id="btn-clear">Clear log</button>
+      </div>
+    </header>
+    <div id="log-list" class="log-list">
+      <p class="log-empty">Loading…</p>
+    </div>
+  </div>
+  <script src="log.js"></script>
+  <script src="log-viewer.js"></script>
+</body>
+</html>

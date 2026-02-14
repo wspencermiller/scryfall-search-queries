@@ -242,6 +242,25 @@ body {
   gap: 6px;
 }
 
+.folder-section-inner {
+  margin-top: 4px;
+}
+
+.folder-children {
+  list-style: none;
+  margin: 0 0 4px 0;
+  padding: 0 0 0 12px;
+  border-left: 2px solid var(--border);
+}
+
+.folder-section--nested .folder-children {
+  margin-bottom: 6px;
+}
+
+.folder-section--collapsed .folder-section-inner {
+  display: none;
+}
+
 .folder-section--collapsed .folder-queries {
   display: none;
 }

@@ -13,6 +13,11 @@ rm -f "$OUT"
 # Zip only the files needed to run the extension (no .git, README, or this script)
 zip -r "$OUT" \
   manifest.json \
+  log.js \
+  log-viewer.js \
+  log.html \
+  export.js \
+  export.html \
   popup.html \
   popup.js \
   popup.css \

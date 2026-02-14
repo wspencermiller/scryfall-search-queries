@@ -1,0 +1,34 @@
+Folder,Name,Shortcut,Query
+None,Commanders,?c,is:commander f:edh game:paper
+Commanders by CI,Colorless,?cc,?c ci=colorless
+Commanders by CI,White,?w,?c ci=w
+Commanders by CI,Blue,?u,?c ci=u
+Commanders by CI,Black,?b,?c ci=b
+Commanders by CI,Red,?r,?c ci=r
+Commanders by CI,Green,?g,?c ci=g
+Commanders by CI,Azorius WU,?wu,?c ci=WU
+Commanders by CI,Dimir UB,?ub,?c ci=UB
+Commanders by CI,Rakdos BR,?br,?c ci=BR
+Commanders by CI,Gruul RG,?rg,?c ci=RG
+Commanders by CI,Selesnya WG,?wg,?c ci=WG
+Commanders by CI,Orzhov WB,?wb,?c ci=WB
+Commanders by CI,Izzet UR,?ur,?c ci=UR
+Commanders by CI,Golgari BG,?bg,?c ci=BG
+Commanders by CI,Boros WR,?wr,?c ci=WR
+Commanders by CI,Simic UG,?ug,?c ci=UG
+Commanders by CI,Esper WUB,?wub,?c ci=WUB
+Commanders by CI,Grixis RUB,?rub,?c ci=RUB
+Commanders by CI,Jund RGB,?rgb,?c ci=RGB
+Commanders by CI,Naya WGU,?wgu,?c ci=WGU
+Commanders by CI,Bant WUG,?wug,?c ci=WUG
+Commanders by CI,Azban WBG,?wbg,?c ci=WBG
+Commanders by CI,Jeskai RWU,?rwu,?c ci=RWU
+Commanders by CI,Sultai UBG,?ubg,?c ci=UBG
+Commanders by CI,Mardu RWB,?rwb,?c ci=RWB
+Commanders by CI,Temur GUR,?gur,?c ci=GUR
+Commanders by CI,WBRU,?wrbu,?c ci=WBRU
+Commanders by CI,WRGB,?wrgb,?c ci=WRGB
+Commanders by CI,RGBU,?rgbu,?c ci=RGBU
+Commanders by CI,WRUG,?wrug,?c ci=WRUG
+Commanders by CI,WUGB,?wugb,?c ci=WUGB
+Commanders by CI,5 Color ,?5c,?c ci=wubrg

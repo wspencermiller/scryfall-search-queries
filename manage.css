@@ -179,6 +179,20 @@ body {
   gap: 8px;
 }
 
+.manage-form-textarea {
+  display: block;
+  width: 100%;
+  min-height: 120px;
+  font-family: ui-monospace, monospace;
+  font-size: 12px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text);
+  resize: vertical;
+}
+
 .manage-form input[type="text"] {
   font-family: inherit;
   font-size: 13px;
@@ -200,6 +214,37 @@ body {
   color: var(--text);
 }
 
+.manage-section--collapsible .manage-section-title--toggle {
+  cursor: pointer;
+  user-select: none;
+  padding-right: 20px;
+  position: relative;
+}
+
+.manage-section--collapsible .manage-section-title--toggle:hover {
+  color: var(--accent);
+}
+
+.manage-section--collapsible .manage-section-title--toggle::after {
+  content: '\25BC';
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.manage-section--collapsible.manage-section--collapsed .manage-section-title--toggle::after {
+  content: '\25B6';
+}
+
+.manage-section--collapsible.manage-section--collapsed .folder-list,
+.manage-section--collapsible.manage-section--collapsed .table-wrap,
+.manage-section--collapsible.manage-section--collapsed .empty-message {
+  display: none;
+}
+
 .folder-list {
   list-style: none;
   margin: 0;
@@ -207,6 +252,10 @@ body {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
+}
+
+.folder-item {
+  padding-left: calc(12px * var(--folder-depth, 0));
 }
 
 .folder-item {

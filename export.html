@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Exported queries – Scryfall Saved Queries</title>
+  <link rel="stylesheet" href="manage.css">
+  <style>
+    .export-page { max-width: 900px; margin: 0 auto; padding: 20px 24px; }
+    .export-header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--border); }
+    .export-title { margin: 0; font-size: 18px; font-weight: 600; }
+    .export-json { font-family: ui-monospace, monospace; font-size: 13px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; white-space: pre-wrap; word-break: break-all; max-height: 70vh; overflow-y: auto; }
+  </style>
+</head>
+<body>
+  <div class="export-page">
+    <header class="export-header">
+      <h1 class="export-title">Exported queries</h1>
+      <button type="button" class="btn btn-ghost" id="btn-copy">Copy to clipboard</button>
+    </header>
+    <pre id="export-json" class="export-json">Loading…</pre>
+  </div>
+  <script src="export.js"></script>
+</body>
+</html>

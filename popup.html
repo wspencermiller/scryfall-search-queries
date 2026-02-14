@@ -17,6 +17,9 @@
     </header>
 
     <form id="form-folder" class="form-add form-folder hidden">
+      <select id="input-folder-parent" aria-label="Parent folder">
+        <option value="">No folder (top level)</option>
+      </select>
       <input type="text" id="input-folder-name" placeholder="Folder name" required maxlength="60" autocomplete="off">
       <div class="form-actions">
         <button type="submit" class="btn btn-primary">Create</button>
@@ -41,12 +44,24 @@
       <ul id="query-list" class="query-list" aria-label="Saved Scryfall queries"></ul>
     </div>
 
+    <form id="form-import" class="form-add hidden">
+      <textarea id="input-import-paste" placeholder="Paste exported JSON here (from Export)…" rows="6"></textarea>
+      <div class="form-actions">
+        <button type="submit" class="btn btn-primary">Import</button>
+        <button type="button" class="btn btn-ghost" id="btn-cancel-import">Cancel</button>
+      </div>
+    </form>
+
     <p id="empty-state" class="empty-state hidden">No saved queries yet. Add one above.</p>
 
     <footer class="footer">
       <button type="button" class="btn btn-ghost btn-sm" id="btn-manage" aria-label="Open manage page">Manage</button>
+      <button type="button" class="btn btn-ghost btn-sm" id="btn-export" aria-label="Export queries">Export</button>
+      <button type="button" class="btn btn-ghost btn-sm" id="btn-import" aria-label="Import queries">Import</button>
+      <button type="button" class="btn btn-ghost btn-sm" id="btn-log" aria-label="View extension log">Log</button>
     </footer>
   </div>
+  <script src="log.js"></script>
   <script src="popup.js"></script>
 </body>
 </html>
