@@ -51,15 +51,3 @@ Load the extension **unpacked** (see Install above) so you can use DevTools.
 
 - **In-extension log:**
   - Click **Log** in the popup footer or on the Manage page to open a log viewer in a new tab. The extension records recent actions (e.g. popup opened, export started/done, content script loaded) in a rotating buffer (last 150 entries). Use **Refresh** to update the view and **Clear log** to reset.
-
-## Package for deploy
-
-To build a zip for the Chrome Web Store, Brave, or distribution:
-
-```bash
-./pack.sh
-```
-
-This creates **scryfall-saved-queries.zip** in the project folder containing only the extension files (manifest, popup, manage, content script, icons). Upload that zip to the [Chrome Web Store Developer Dashboard](https://chrome.google.com/webstore/devconsole) for publishing, or share the zip so others can unzip and use **Load unpacked** with the extracted folder.
-
-Query syntax is the same as on [Scryfall](https://scryfall.com/) (e.g. `c:blue`, `t:creature`, `f:commander`). See [Scryfall’s syntax guide](https://scryfall.com/docs/syntax) for details.
